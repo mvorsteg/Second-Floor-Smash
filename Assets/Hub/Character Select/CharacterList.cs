@@ -98,6 +98,8 @@ public class CharacterList : MonoBehaviour
     public float RobosHeightOffset;
     public GameObject[] SamPolhemus;
     public float SamPolhemusHeightOffset;
+    public GameObject[] SilverSprinter;
+    public float SilverSprinterHeightOffset;
     public GameObject[] Testudo;
     public float TestudoHeightOffset;
     public GameObject[] TimHenderson;
@@ -217,6 +219,8 @@ public class CharacterList : MonoBehaviour
         heightOffsets.Add("Robois", RobosHeightOffset);
         characters.Add("Sam Polhemus", SamPolhemus);
         heightOffsets.Add("Sam Polhemus", SamPolhemusHeightOffset);
+        characters.Add("Silver Sprinter", SilverSprinter);
+        heightOffsets.Add("Silver Sprinter", SilverSprinterHeightOffset);
         characters.Add("Testudo", Testudo);
         heightOffsets.Add("Testudo", TestudoHeightOffset);
         characters.Add("Tim Henderson", TimHenderson);
