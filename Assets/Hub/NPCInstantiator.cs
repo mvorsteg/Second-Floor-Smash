@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using ExtensionMethods;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,7 +16,8 @@ public class NPCInstantiator : MonoBehaviour
     public CharacterList charList;
     public GameObject literallyEveryone;
     private List<GameObject[]> allChars;
-    private Mode status = Mode.Nobody; // 0 is nobody in scene, 1 is one of everyone in scene, 2 is literally everyone in scene
+    public Mode status = Mode.Nobody; // 0 is nobody in scene, 1 is one of everyone in scene, 2 is literally everyone in scene
+    public int numChars = 10;
     private GameObject[] currentChars;
     private GameObject currentLiterallyEveryone;
 
@@ -29,8 +31,6 @@ public class NPCInstantiator : MonoBehaviour
 
     public void InstantiateNPCs()
     {
-        status = (Mode)(((int)status + 1 ) % System.Enum.GetValues(typeof(Mode)).Length);
-
         // always destroy all existing characters
         foreach(GameObject character in currentChars)
         {
@@ -45,12 +45,17 @@ public class NPCInstantiator : MonoBehaviour
             case Mode.Everybody:
                 int i = 0;
                 // Instantiate a random skin of each character
+                allChars.Shuffle();
                 foreach(GameObject[] character in allChars)
                 {
                     if (character.Length > 0)
                     {
                         currentChars[i] = Instantiate(character[(int) Mathf.Round(Random.Range(0, character.Length - 1))].GetComponent<CharacterController>().GetNonGameCharacter(), transform);
                         i++;
+                    }
+                    if (i > numChars)
+                    {
+                        break;
                     }
                 }
             break;
@@ -69,6 +74,8 @@ public class NPCInstantiator : MonoBehaviour
                 status = 0;
             break;
         }
+
+        status = (Mode)(((int)status + 1 ) % System.Enum.GetValues(typeof(Mode)).Length);
 
     }
 }

@@ -6,18 +6,20 @@ using UnityEngine.AI;
 public class NPCControl : MonoBehaviour
 {
     public float roamingRadius = 10;
-    public float roamingTimerMax = 10f;
-    public float roamingTimerMin = 3f;
+    public float idleTimerMax = 180f;
+    public float idleTimerMin = 15f;
 
     private Animator anim;
     private NavMeshAgent nav;
     private Transform target;
+    [SerializeField]
     private float timer;
     private float currentRoamTime;
     private bool isRoaming;
 
     // DEBUG and Temp stuff that should eventually be removed
-    public Transform destination; // leave this empty for regular behavior
+    public NPCWaypoint destination; // leave this empty for regular behavior
+    public NPCWaypointController waypointController;
     public bool startInRandomPosition = true;
     public float randomPositionStartingRadius = 120;
     
@@ -26,8 +28,7 @@ public class NPCControl : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         nav = GetComponent<NavMeshAgent>();
-        timer = roamingTimerMax;
-        currentRoamTime = roamingTimerMin;
+        timer = Random.Range(idleTimerMin, idleTimerMax);
         transform.Find("Body").localEulerAngles = new Vector3(0,0,0);
         StartCoroutine(Roaming());
 
@@ -35,9 +36,20 @@ public class NPCControl : MonoBehaviour
         CapsuleCollider capsule = GetComponent<CapsuleCollider>();
         nav.baseOffset = - (capsule.center.y - capsule.height / 2) - 0.05f;
 
+        waypointController = FindObjectOfType<NPCWaypointController>();
+        if (waypointController != null)
+        {
+            destination = waypointController.GetNextWaypoint(this);
+            // go straight to this 1st dest
+            nav.Warp(destination.transform.position);
+            if (destination.action == NPCWaypointAction.Sitting)
+            {
+                anim.SetBool("Sit", true);
+            }
+        }
         // Remove this
         // Randomize starting position
-        if (startInRandomPosition)
+        else
         {
             Vector3 initPos = GetNewDestination(transform.position, randomPositionStartingRadius, -1);
             transform.position = initPos;
@@ -46,9 +58,7 @@ public class NPCControl : MonoBehaviour
  
     // Update is called once per frame
     void Update ()
-    {
-        timer += Time.deltaTime;
-        
+    {        
         // Calculate angular velocity
         Vector3 s = transform.InverseTransformDirection(nav.velocity).normalized;
         float turn = s.x;
@@ -57,21 +67,32 @@ public class NPCControl : MonoBehaviour
         anim.SetFloat("Speed", nav.velocity.magnitude);
         anim.SetFloat("Turn", turn * 2);
 
+        if (isRoaming)
+        {
+            if (IsAtDestination())
+            {
+                isRoaming = false;
+                if (destination.action == NPCWaypointAction.Sitting)
+                {
+                    anim.SetBool("Sit", true);
+                }
+                transform.rotation = destination.transform.rotation;
+            }
+        }
         // When time is up, roam to a new destination
-        if (timer >= currentRoamTime) {
-            Vector3 newPos;
-            // debug purposes
-            if (destination == null)
+        if (!isRoaming)
+        {
+            timer -= Time.deltaTime;
+            if (timer < 0)
             {
-                newPos = GetNewDestination(transform.position, roamingRadius, -1);
+                // get new destination
+                destination = waypointController.GetNextWaypoint(this);
+                nav.SetDestination(destination.transform.position);
+                timer = Random.Range(idleTimerMin, idleTimerMax);
+
+                isRoaming = true;
+                anim.SetBool("Sit", false);
             }
-            else
-            {
-                newPos = destination.position;
-            }
-            nav.SetDestination(newPos);
-            currentRoamTime = Random.Range(roamingTimerMin, roamingTimerMax);
-            timer = 0;
         }
     }
 
@@ -149,5 +170,21 @@ public class NPCControl : MonoBehaviour
         NavMesh.SamplePosition(newDirection, out navHit, radius, layermask);
     
         return navHit.position;
+    }
+
+    private bool IsAtDestination()
+    {
+        // Check if we've reached the destination
+        if (!nav.pathPending)
+        {
+            if (nav.remainingDistance <= nav.stoppingDistance)
+            {
+                if (!nav.hasPath || nav.velocity.sqrMagnitude == 0f)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

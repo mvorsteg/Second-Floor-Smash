@@ -323,4 +323,9 @@ public class GameplayManager : MonoBehaviour
         // return random target
         return players[Random.Range(0, numPlayers)];
     }
+
+    private void OnDrawGizmos()
+    {
+       // Debug.DrawRect
+    }
 }
